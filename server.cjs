@@ -357,33 +357,6 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
-  if (req.method === "POST" && req.url === "/pay/ton/wallet-balance") {
-    let body = "";
-    req.on("data", (c) => { body += c; });
-    req.on("end", async () => {
-      try {
-        const payload = JSON.parse(body || "{}");
-        const address = safeStr(payload.address || "", 128);
-        if (!address) {
-          res.writeHead(400, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ ok: false, error: "bad_payload" }));
-          return;
-        }
-        const r = await fetch(`https://toncenter.com/api/v2/getAddressBalance?address=${encodeURIComponent(address)}`, process.env.TONCENTER_API_KEY ? {
-          headers: { "X-API-Key": process.env.TONCENTER_API_KEY }
-        } : undefined);
-        const j = await r.json();
-        const nano = BigInt(String(j?.result || "0"));
-        const balanceTon = Number(nano) / 1e9;
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ ok: true, balanceTon }));
-      } catch {
-        res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ ok: false, error: "bad_json" }));
-      }
-    });
-    return;
-  }
   if (req.method === "GET" && req.url === "/tonconnect-manifest.json") {
     const fallback = {
       url: process.env.PUBLIC_APP_URL || "https://example.com",
@@ -545,15 +518,9 @@ function isAdminTelegramId(id) {
 }
 
 function parseBalanceCommand(text) {
-  const m = String(text || "").trim().match(/^\/balance\s+(@[a-zA-Z0-9_]{3,64}|\d{5,20})\s+([0-9]+(?:\.[0-9]{1,2})?)\s+(TON|STARS)$/i);
+  const m = String(text || "").trim().match(/^\/balance\s+@([a-zA-Z0-9_]{3,64})\s+([0-9]+(?:\.[0-9]{1,2})?)\s+(TON|STARS)$/i);
   if (!m) return null;
-  const target = m[1];
-  return {
-    targetUsername: target.startsWith("@") ? target.slice(1).toLowerCase() : "",
-    targetUserId: target.startsWith("@") ? "" : target,
-    amount: Number(m[2]),
-    currency: m[3].toLowerCase() === "ton" ? "ton" : "stars"
-  };
+  return { username: m[1].toLowerCase(), amount: Number(m[2]), currency: m[3].toLowerCase() === "ton" ? "ton" : "stars" };
 }
 
 async function processTgUpdate(u) {
@@ -565,21 +532,17 @@ async function processTgUpdate(u) {
       if (!isAdminTelegramId(fromId)) {
         if (u.message?.chat?.id) await tgApi("sendMessage", { chat_id: u.message.chat.id, text: "Нет прав для команды /balance" });
       } else {
-        const matched = cmd.targetUserId
-          ? Object.keys(balanceStore.users).filter(uid => String(uid) === String(cmd.targetUserId))
-          : Object.keys(balanceStore.users).filter(uid => String(balanceStore.users[uid]?.username || "") === cmd.targetUsername);
+        const matched = Object.keys(balanceStore.users).filter(uid => String(balanceStore.users[uid]?.username || "") === cmd.username);
         if (matched.length === 1) {
           const userId = matched[0];
           ensureUserBalance(userId).balances[cmd.currency] = roundMoney(ensureUserBalance(userId).balances[cmd.currency] + cmd.amount);
           saveStoreAtomic(balanceStore);
           pushBalanceToUser(userId);
-          const replyTarget = cmd.targetUsername ? `@${cmd.targetUsername}` : userId;
-          if (u.message?.chat?.id) await tgApi("sendMessage", { chat_id: u.message.chat.id, text: `${replyTarget} начислено ${cmd.amount} ${cmd.currency.toUpperCase()}` });
+          if (u.message?.chat?.id) await tgApi("sendMessage", { chat_id: u.message.chat.id, text: `Начислено ${cmd.amount} ${cmd.currency.toUpperCase()} для @${cmd.username}` });
         } else if (u.message?.chat?.id) {
-          await tgApi("sendMessage", { chat_id: u.message.chat.id, text: "Команда не выполнена: пользователь не найден или неоднозначен" });
+          await tgApi("sendMessage", { chat_id: u.message.chat.id, text: "Пользователь не найден или неоднозначен" });
         }
       }
-      return;
     }
     if (u.pre_checkout_query?.id) {
       await tgApi("answerPreCheckoutQuery", { pre_checkout_query_id: u.pre_checkout_query.id, ok: true });
