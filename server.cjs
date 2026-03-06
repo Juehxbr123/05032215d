@@ -87,13 +87,14 @@ function parseUserId(userKey) {
 
 function ensureUserBalance(userId) {
   if (!userId) return { username: "", name: "", balances: { ton: 0, stars: 0 } };
-  if (!balanceStore.users[userId]) balanceStore.users[userId] = { username: "", name: "", balances: { ton: 0, stars: 0 } };
+  if (!balanceStore.users[userId]) balanceStore.users[userId] = { username: "", name: "", balances: { ton: 0, stars: 0 }, walletAddress: "" };
   const row = balanceStore.users[userId];
   if (!row.balances || typeof row.balances !== "object") row.balances = { ton: 0, stars: 0 };
   if (!Number.isFinite(row.balances.ton)) row.balances.ton = 0;
   if (!Number.isFinite(row.balances.stars)) row.balances.stars = 0;
   if (typeof row.username !== "string") row.username = "";
   if (typeof row.name !== "string") row.name = "";
+  if (typeof row.walletAddress !== "string") row.walletAddress = "";
   return balanceStore.users[userId];
 }
 
@@ -103,7 +104,7 @@ function getBalances(userId) {
 }
 
 function sendBalanceToWs(ws, userId) {
-  send(ws, { type: "balance", balances: getBalances(userId) });
+  send(ws, { type: "balance", balances: getBalances(userId), walletAddress: ensureUserBalance(userId).walletAddress || "" });
 }
 
 function pushBalanceToUser(userId) {
@@ -215,7 +216,7 @@ const server = http.createServer((req, res) => {
         const payload = JSON.parse(body || "{}");
         const userId = safeStr(payload.userId || "", 128);
         const stars = Number(payload.stars);
-        if (!userId || !Number.isInteger(stars) || stars < 50 || stars % 50 !== 0) {
+        if (!userId || !Number.isInteger(stars) || stars < 1) {
           res.writeHead(400, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ ok: false, error: "bad_payload" }));
           return;
@@ -262,7 +263,7 @@ const server = http.createServer((req, res) => {
         const payload = JSON.parse(body || "{}");
         const userId = safeStr(payload.userId || "", 128);
         const ton = Number(payload.ton);
-        if (!userId || !Number.isInteger(ton) || ton < 1 || ton % 1 !== 0) {
+        if (!userId || !Number.isFinite(ton) || ton < 0.01) {
           res.writeHead(400, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ ok: false, error: "bad_payload" }));
           return;
@@ -354,6 +355,50 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({ ok: false, error: "bad_json" }));
       }
     });
+    return;
+  }
+  if (req.method === "POST" && req.url === "/pay/ton/wallet-balance") {
+    let body = "";
+    req.on("data", (c) => { body += c; });
+    req.on("end", async () => {
+      try {
+        const payload = JSON.parse(body || "{}");
+        const address = safeStr(payload.address || "", 128);
+        if (!address) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "bad_payload" }));
+          return;
+        }
+        const r = await fetch(`https://toncenter.com/api/v2/getAddressBalance?address=${encodeURIComponent(address)}`, process.env.TONCENTER_API_KEY ? {
+          headers: { "X-API-Key": process.env.TONCENTER_API_KEY }
+        } : undefined);
+        const j = await r.json();
+        const nano = BigInt(String(j?.result || "0"));
+        const balanceTon = Number(nano) / 1e9;
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, balanceTon }));
+      } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "bad_json" }));
+      }
+    });
+    return;
+  }
+  if (req.method === "GET" && req.url === "/tonconnect-manifest.json") {
+    const fallback = {
+      url: process.env.PUBLIC_APP_URL || "https://example.com",
+      name: "303Dura",
+      iconUrl: (process.env.PUBLIC_APP_URL || "https://example.com") + "/icon.png",
+      termsOfUseUrl: process.env.TERMS_URL || (process.env.PUBLIC_APP_URL || "https://example.com"),
+      privacyPolicyUrl: process.env.PRIVACY_URL || (process.env.PUBLIC_APP_URL || "https://example.com")
+    };
+    let manifest = fallback;
+    try {
+      const local = JSON.parse(fs.readFileSync(path.join(__dirname, "tonconnect-manifest.json"), "utf8"));
+      manifest = { ...fallback, ...local };
+    } catch {}
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(manifest));
     return;
   }
   res.writeHead(404);
@@ -493,8 +538,49 @@ function parseStarsPayload(s) {
   return { userId: m[1], stars: Number(m[2]), nonce: m[3] };
 }
 
+function isAdminTelegramId(id) {
+  const raw = String(process.env.ADMIN_IDS || "");
+  const set = new Set(raw.split(",").map(x => x.trim()).filter(Boolean));
+  return set.has(String(id || ""));
+}
+
+function parseBalanceCommand(text) {
+  const m = String(text || "").trim().match(/^\/balance\s+(@[a-zA-Z0-9_]{3,64}|\d{5,20})\s+([0-9]+(?:\.[0-9]{1,2})?)\s+(TON|STARS)$/i);
+  if (!m) return null;
+  const target = m[1];
+  return {
+    targetUsername: target.startsWith("@") ? target.slice(1).toLowerCase() : "",
+    targetUserId: target.startsWith("@") ? "" : target,
+    amount: Number(m[2]),
+    currency: m[3].toLowerCase() === "ton" ? "ton" : "stars"
+  };
+}
+
 async function processTgUpdate(u) {
   try {
+    const msgText = u.message?.text || "";
+    const fromId = u.message?.from?.id;
+    const cmd = parseBalanceCommand(msgText);
+    if (cmd) {
+      if (!isAdminTelegramId(fromId)) {
+        if (u.message?.chat?.id) await tgApi("sendMessage", { chat_id: u.message.chat.id, text: "Нет прав для команды /balance" });
+      } else {
+        const matched = cmd.targetUserId
+          ? Object.keys(balanceStore.users).filter(uid => String(uid) === String(cmd.targetUserId))
+          : Object.keys(balanceStore.users).filter(uid => String(balanceStore.users[uid]?.username || "") === cmd.targetUsername);
+        if (matched.length === 1) {
+          const userId = matched[0];
+          ensureUserBalance(userId).balances[cmd.currency] = roundMoney(ensureUserBalance(userId).balances[cmd.currency] + cmd.amount);
+          saveStoreAtomic(balanceStore);
+          pushBalanceToUser(userId);
+          const replyTarget = cmd.targetUsername ? `@${cmd.targetUsername}` : userId;
+          if (u.message?.chat?.id) await tgApi("sendMessage", { chat_id: u.message.chat.id, text: `${replyTarget} начислено ${cmd.amount} ${cmd.currency.toUpperCase()}` });
+        } else if (u.message?.chat?.id) {
+          await tgApi("sendMessage", { chat_id: u.message.chat.id, text: "Команда не выполнена: пользователь не найден или неоднозначен" });
+        }
+      }
+      return;
+    }
     if (u.pre_checkout_query?.id) {
       await tgApi("answerPreCheckoutQuery", { pre_checkout_query_id: u.pre_checkout_query.id, ok: true });
     }
@@ -2086,6 +2172,17 @@ wss.on("connection", (ws) => {
       return;
     }
 
+    if (msg.type === "wallet_bind") {
+      const userKey = safeStr(ws.userKey || msg.userKey || "", 128);
+      const userId = parseUserId(userKey);
+      if (!userId) return;
+      const walletAddress = safeStr(msg.walletAddress || "", 128);
+      ensureUserBalance(userId).walletAddress = walletAddress;
+      saveStoreAtomic(balanceStore);
+      pushBalanceToUser(userId);
+      return;
+    }
+
     if (msg.type === "list_lobbies") {
       send(ws, { type:"lobbies", ...buildLobbyLists() });
 	  return;
@@ -2099,7 +2196,7 @@ wss.on("connection", (ws) => {
       const profile = sanitizeProfile(msg.profile);
       setUserMetaFromProfile(parseUserId(userKey), profile);
 
-      const quickCurrency = normalizeCurrency(msg.currency || (Number(msg.stake) === 1 ? "ton" : "stars")) || "stars";
+      const quickCurrency = normalizeCurrency(msg.currency || (Number(msg.stake) === 1 ? "ton" : "stars")) || "ton";
       const quickStake = Number(msg.stake || (quickCurrency === "ton" ? 1 : 50));
       if (quickCurrency === "ton" && (!Number.isInteger(quickStake) || quickStake < 1)) {
         send(ws, { type:"error", message:"Ставка TON: минимум 1, шаг 1" });
