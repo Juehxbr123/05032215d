@@ -871,9 +871,6 @@
   </div>
 
   <div class="app" id="app">
-    <div class="cardPanel" style="padding:8px 12px; margin-bottom:8px;">
-      <div class="muted" id="globalBalance">TON: 0 • ⭐: 0</div>
-    </div>
 
     <!-- PROFILE -->
     <div class="screen active" id="screenProfile">
@@ -897,19 +894,19 @@
           <div class="muted">Баланс: <b id="balanceVal">0</b></div>
         </div>
         <div class="muted" id="balanceBreakdown" style="margin-top:6px;">TON: 0 • STARS: 0</div>
-        <div id="tonConnectMount" style="margin-top:8px;"></div>
         <div class="row" style="margin-top:8px;">
           <button class="btn gray" id="btnTopupTon">Пополнить TON</button>
-          <input class="input" id="topupTonInput" type="number" min="1" step="1" value="1" style="max-width:100px;" />
-          <button class="btn blue" id="btnPayTon">Оплатить</button>
+          <div class="muted" id="tonWalletInfo">Кошелёк не подключен</div>
+        </div>
+        <div class="row" id="tonTopupControls" style="margin-top:8px; display:none;">
+          <input class="input" id="topupTonInput" type="number" min="0.01" step="0.01" value="0.01" style="max-width:120px;" />
+          <button class="btn blue" id="btnPayTon">Пополнить TON (депозит)</button>
         </div>
         <div class="row" style="margin-top:8px;">
           <button class="btn gray" id="btnTopupStars">Пополнить ⭐</button>
-          <input class="input" id="topupStarsInput" type="number" min="50" step="50" value="50" style="max-width:100px;" />
+          <input class="input" id="topupStarsInput" type="number" min="1" step="1" value="1" style="max-width:100px;" />
         </div>
         <div class="muted" id="tonOrderInfo" style="margin-top:6px; white-space:pre-wrap;"></div>
-
-        <div style="height:12px;"></div>
 
         <div style="height:10px;"></div>
         <div class="row" style="justify-content:space-between; gap:12px;">
@@ -921,18 +918,6 @@
             </div>
           </div>
         </div>
-
-        <div style="height:12px;"></div>
-
-        <button class="btn gray" id="btnTopupTon">Пополнить TON</button>
-        <div class="row" id="tonTopupControls" style="margin-top:8px; display:none;">
-          <input class="input" id="topupTonInput" type="number" min="1" step="1" value="1" style="max-width:110px;" />
-        </div>
-        <div class="row" style="margin-top:8px;">
-          <button class="btn gray" id="btnTopupStars">Пополнить ⭐</button>
-          <input class="input" id="topupStarsInput" type="number" min="50" step="50" value="50" style="max-width:110px;" />
-        </div>
-        <div class="muted" id="tonOrderInfo" style="margin-top:6px; white-space:pre-wrap;"></div>
       </div>
     </div>
 
@@ -945,11 +930,11 @@
           <div class="balanceChip tabBalance">TON: 0 • ⭐: 0</div>
         </div>
         <div style="height:10px;"></div>
-        <div class="row" style="gap:8px; flex-wrap:wrap;">
-          <select class="input" id="filterCurrency" style="max-width:120px;"><option value="all">ALL</option><option value="ton">TON</option><option value="stars">⭐</option></select>
-          <select class="input" id="filterTransfer" style="max-width:130px;"><option value="all">transfer: all</option><option value="on">transfer on</option><option value="off">transfer off</option></select>
-          <select class="input" id="filterThrow" style="max-width:140px;"><option value="all">throw: all</option><option value="neighbors">neighbors</option><option value="allOnly">all</option></select>
-          <select class="input" id="filterWin" style="max-width:130px;"><option value="all">win: all</option><option value="classic">classic</option><option value="draw">draw</option></select>
+        <div class="filtersGrid">
+          <select class="input" id="filterCurrency"><option value="all">Валюта: Все</option><option value="ton">Валюта: TON</option><option value="stars">Валюта: ⭐</option></select>
+          <select class="input" id="filterTransfer"><option value="all">Переводной: Все</option><option value="on">Переводной: Вкл</option><option value="off">Переводной: Выкл</option></select>
+          <select class="input" id="filterThrow"><option value="all">Подкидывание: Все</option><option value="neighbors">Подкидывание: Соседи</option><option value="allOnly">Подкидывание: Все игроки</option></select>
+          <select class="input" id="filterWin"><option value="all">Режим победы: Все</option><option value="classic">Режим победы: Классика</option><option value="draw">Режим победы: Ничья</option></select>
         </div>
         <div class="list" id="listPublic"></div>
         <div class="err" id="errPublic"></div>
@@ -966,10 +951,10 @@
         </div>
         <div style="height:10px;"></div>
         <div class="filtersGrid">
-          <select class="input" id="filterCurrencyPriv"><option value="all">Валюта: все</option><option value="ton">Валюта: TON</option><option value="stars">Валюта: ⭐</option></select>
-          <select class="input" id="filterTransferPriv"><option value="all">Переводной: все</option><option value="on">Переводной: вкл</option><option value="off">Переводной: выкл</option></select>
-          <select class="input" id="filterThrowPriv"><option value="all">Подкидывание: все</option><option value="neighbors">Подкидывание: соседи</option><option value="allOnly">Подкидывание: все игроки</option></select>
-          <select class="input" id="filterWinPriv"><option value="all">Режим победы: все</option><option value="classic">Режим: классика</option><option value="draw">Режим: ничья</option></select>
+          <select class="input" id="filterCurrencyPriv"><option value="all">Валюта: Все</option><option value="ton">Валюта: TON</option><option value="stars">Валюта: ⭐</option></select>
+          <select class="input" id="filterTransferPriv"><option value="all">Переводной: Все</option><option value="on">Переводной: Вкл</option><option value="off">Переводной: Выкл</option></select>
+          <select class="input" id="filterThrowPriv"><option value="all">Подкидывание: Все</option><option value="neighbors">Подкидывание: Соседи</option><option value="allOnly">Подкидывание: Все игроки</option></select>
+          <select class="input" id="filterWinPriv"><option value="all">Режим победы: Все</option><option value="classic">Режим победы: Классика</option><option value="draw">Режим победы: Ничья</option></select>
         </div>
         <div class="list" id="listPrivate"></div>
         <div class="err" id="errPrivate"></div>
@@ -990,10 +975,8 @@
           <button class="btn gray" id="btnCurTon">TON</button>
           <button class="btn gray" id="btnCurStars">⭐</button>
         </div>
-        <div class="row" style="align-items:center; gap:10px; margin-top:8px;">
-          <div class="muted" id="stakeLabel">Ставка: 1 TON</div>
-          <input class="input" id="stakeInput" type="number" min="1" step="1" value="1" style="max-width:140px;" />
-        </div>
+        <div class="row" style="align-items:center; gap:10px; margin-top:8px;"><div class="muted" id="stakeLabel">Ставка: 1 TON</div></div>
+        <div class="row" style="margin-top:8px;"><input class="stakeSlider" id="stakeInput" type="range" min="1" max="100" step="1" value="1" /></div>
 
         <div style="height:12px;"></div>
 
@@ -1066,10 +1049,9 @@
         </div>
 
         <div style="height:10px;"></div>
-
-        <div class="muted">Пароль (пусто = публичное лобби)</div>
-        <div id="passWrap" style="margin-top:10px;">
-          <input class="input" id="passInput" placeholder="Задай пароль (для закрытого)" inputmode="text" autocomplete="off" autocapitalize="off" />
+        <label class="switch"><input type="checkbox" id="privateCheck" /> Приватное лобби</label>
+        <div id="passWrap" style="margin-top:10px; display:none;">
+          <input class="input" id="passInput" placeholder="Пароль" inputmode="text" autocomplete="off" autocapitalize="off" />
         </div>
 
         <div style="height:12px;"></div>
@@ -1254,12 +1236,10 @@
   renderProfile();
   let currentBalances = { ton: 0, stars: 0 };
   const balanceBreakdown = document.getElementById("balanceBreakdown");
-  const globalBalance = document.getElementById("globalBalance");
   function renderBalance() {
     const ton = Number(currentBalances.ton || 0);
     const stars = Number(currentBalances.stars || 0);
     balanceBreakdown.textContent = `TON: ${ton.toFixed(2)} • STARS: ${Math.floor(stars)}`;
-    if (globalBalance) globalBalance.textContent = `TON: ${ton.toFixed(2)} • ⭐: ${Math.floor(stars)}`;
   }
   renderBalance();
   try {
@@ -1412,7 +1392,7 @@
             stars: Number(msg.balances.stars || 0)
           };
         }
-        if (msg.walletAddress) linkedWalletAddress = String(msg.walletAddress);
+        linkedWalletAddress = String(msg.walletAddress || linkedWalletAddress || "");
         renderBalance();
         syncTonTopupUi();
         return;
@@ -1477,7 +1457,6 @@
   // ===== Quick match
   const btnQuick = document.getElementById("btnQuick");
   const btnQuickCancel = document.getElementById("btnQuickCancel");
-  let quickStake = 50;
   function updateQuickUI(){
     btnQuick.style.display = quickSearching ? "none" : "inline-block";
     btnQuickCancel.style.display = quickSearching ? "inline-block" : "none";
@@ -1490,7 +1469,8 @@
     } else if (currentBalances.stars >= 50) {
       sendMsg({ type:"quick_match", userKey, profile, stake: 50, currency:"stars" });
     } else {
-      alert("Недостаточно средств");
+      alert("Недостаточно средств. Пополните TON или ⭐.");
+      setTab("profile");
     }
   };
   btnQuickCancel.onclick = () => {
@@ -1503,21 +1483,46 @@
   const topupTonInput = document.getElementById("topupTonInput");
   const topupStarsInput = document.getElementById("topupStarsInput");
   const tonOrderInfo = document.getElementById("tonOrderInfo");
+  const tonTopupControls = document.getElementById("tonTopupControls");
+  const tonWalletInfo = document.getElementById("tonWalletInfo");
+  let linkedWalletAddress = "";
   const tonConnectManifestUrl = location.origin + "/tonconnect-manifest.json";
   const tonConnectUI = (window.TON_CONNECT_UI)
-    ? new TON_CONNECT_UI.TonConnectUI({ manifestUrl: tonConnectManifestUrl, buttonRootId: "tonConnectMount" })
+    ? new TON_CONNECT_UI.TonConnectUI({ manifestUrl: tonConnectManifestUrl })
     : null;
+
+  async function safeFetchJson(url, options) {
+    const r = await fetch(url, options);
+    const text = await r.text();
+    let data = null;
+    try { data = JSON.parse(text); }
+    catch {
+      throw new Error(r.ok ? "Сервер вернул некорректный ответ" : `Ошибка ${r.status}: сервер вернул HTML/текст`);
+    }
+    if (!r.ok || !data?.ok) throw new Error(data?.error || `HTTP ${r.status}`);
+    return data;
+  }
+
+  function syncTonTopupUi() {
+    const connected = !!linkedWalletAddress || !!tonConnectUI?.connected;
+    tonTopupControls.style.display = connected ? "flex" : "none";
+    tonWalletInfo.textContent = connected
+      ? `Кошелёк: ${linkedWalletAddress || "подключен"}`
+      : "Кошелёк не подключен";
+  }
+  syncTonTopupUi();
 
   async function pollTonConfirm(orderId, userId) {
     const started = Date.now();
     while (Date.now() - started < 90000) {
-      const c = await fetch("/pay/ton/confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, userId })
-      });
-      const cj = await c.json();
-      if (c.ok && cj.ok) return true;
+      try {
+        await safeFetchJson("/pay/ton/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId, userId })
+        });
+        return true;
+      } catch {}
       await new Promise(r => setTimeout(r, 2500));
     }
     return false;
@@ -1525,16 +1530,15 @@
 
   btnTopupStars.onclick = async () => {
     const userId = (inTG && tg.initDataUnsafe?.user?.id) ? String(tg.initDataUnsafe.user.id) : String(userKey || "").replace(/^tg:/, "");
-    const stars = Math.max(50, Math.round(Number(topupStarsInput.value || 0) / 50) * 50);
+    const stars = Math.max(1, Math.floor(Number(topupStarsInput.value || 0)));
     topupStarsInput.value = String(stars);
     try {
-      const r = await fetch("/pay/stars/link", {
+      const j = await safeFetchJson("/pay/stars/link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, stars })
       });
-      const j = await r.json();
-      if (!r.ok || !j.ok || !j.url) throw new Error(j.error || "stars_link_failed");
+      if (!j.url) throw new Error("stars_link_failed");
       if (tg && typeof tg.openInvoice === "function") tg.openInvoice(j.url);
       else alert("Оплата доступна только в Telegram");
     } catch (e) {
@@ -1545,22 +1549,25 @@
   btnTopupTon.onclick = async () => {
     if (!tonConnectUI) return alert("TON Connect недоступен");
     if (!tonConnectUI.connected) await tonConnectUI.openModal();
+    if (tonConnectUI.account?.address) {
+      linkedWalletAddress = tonConnectUI.account.address;
+      sendMsg({ type:"wallet_bind", walletAddress: linkedWalletAddress, userKey });
+      syncTonTopupUi();
+    }
   };
 
   btnPayTon.onclick = async () => {
     const userId = (inTG && tg.initDataUnsafe?.user?.id) ? String(tg.initDataUnsafe.user.id) : String(userKey || "").replace(/^tg:/, "");
-    const ton = Math.max(1, Math.round(Number(topupTonInput.value || 0)));
-    topupTonInput.value = String(ton);
+    const ton = Math.max(0.01, Math.round(Number(topupTonInput.value || 0) * 100) / 100);
+    topupTonInput.value = ton.toFixed(2);
     try {
       if (!tonConnectUI) throw new Error("ton_connect_missing");
       if (!tonConnectUI.connected) await tonConnectUI.openModal();
-      const o = await fetch("/pay/ton/order", {
+      const ord = await safeFetchJson("/pay/ton/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, ton })
       });
-      const ord = await o.json();
-      if (!o.ok || !ord.ok) throw new Error(ord.error || "order_failed");
       pendingTonOrder = ord;
       tonOrderInfo.textContent = `Оплата TON: ${ton} отправлена...`;
       await tonConnectUI.sendTransaction({
@@ -1647,6 +1654,12 @@
   btnP6.onclick = () => { createPlayers=6; renderCreatePlayers(); renderThrowInMode(); };
 
   const passInput = document.getElementById("passInput");
+  const privateCheck = document.getElementById("privateCheck");
+  const passWrap = document.getElementById("passWrap");
+  privateCheck.onchange = () => {
+    passWrap.style.display = privateCheck.checked ? "block" : "none";
+    if (!privateCheck.checked) passInput.value = "";
+  };
 
   const btnTransferOff = document.getElementById("btnTransferOff");
   const btnTransferOn = document.getElementById("btnTransferOn");
@@ -1764,7 +1777,7 @@
       throwInMode: createThrowInMode,
       stake: finalStake,
       currency: finalCurrency,
-      password: pass
+      password: privateCheck.checked ? pass : ""
     });
   }
   document.getElementById("btnCreateLobby").onclick = () => submitCreate();
@@ -1778,7 +1791,26 @@
   const filterTransfer = document.getElementById("filterTransfer");
   const filterThrow = document.getElementById("filterThrow");
   const filterWin = document.getElementById("filterWin");
-  [filterCurrency, filterTransfer, filterThrow, filterWin].forEach(el => el && (el.onchange = () => renderLists()));
+  const filterCurrencyPriv = document.getElementById("filterCurrencyPriv");
+  const filterTransferPriv = document.getElementById("filterTransferPriv");
+  const filterThrowPriv = document.getElementById("filterThrowPriv");
+  const filterWinPriv = document.getElementById("filterWinPriv");
+  function syncFilters(fromPrivate = false){
+    if (fromPrivate) {
+      filterCurrency.value = filterCurrencyPriv.value;
+      filterTransfer.value = filterTransferPriv.value;
+      filterThrow.value = filterThrowPriv.value;
+      filterWin.value = filterWinPriv.value;
+    } else {
+      filterCurrencyPriv.value = filterCurrency.value;
+      filterTransferPriv.value = filterTransfer.value;
+      filterThrowPriv.value = filterThrow.value;
+      filterWinPriv.value = filterWin.value;
+    }
+    renderLists();
+  }
+  [filterCurrency, filterTransfer, filterThrow, filterWin].forEach(el => el && (el.onchange = () => syncFilters(false)));
+  [filterCurrencyPriv, filterTransferPriv, filterThrowPriv, filterWinPriv].forEach(el => el && (el.onchange = () => syncFilters(true)));
   const passwordOverlay = document.getElementById("passwordOverlay");
   const joinPasswordInput = document.getElementById("joinPasswordInput");
   let pendingPrivateJoin = null;
@@ -1796,12 +1828,12 @@
   };
 
   function passFilters(it){
-    if (filterCurrency?.value && filterCurrency.value !== "all" && it.currency !== filterCurrency.value) return false;
-    if (filterTransfer?.value === "on" && !it.allowTransfer) return false;
-    if (filterTransfer?.value === "off" && it.allowTransfer) return false;
-    if (filterThrow?.value === "neighbors" && it.throwInMode !== "neighbors") return false;
-    if (filterThrow?.value === "allOnly" && it.throwInMode !== "all") return false;
-    if (filterWin?.value && filterWin.value !== "all" && it.winMode !== filterWin.value) return false;
+    if (filterCurrency.value !== "all" && it.currency !== filterCurrency.value) return false;
+    if (filterTransfer.value === "on" && !it.allowTransfer) return false;
+    if (filterTransfer.value === "off" && it.allowTransfer) return false;
+    if (filterThrow.value === "neighbors" && it.throwInMode !== "neighbors") return false;
+    if (filterThrow.value === "allOnly" && it.throwInMode !== "all") return false;
+    if (filterWin.value !== "all" && it.winMode !== filterWin.value) return false;
     return true;
   }
 
