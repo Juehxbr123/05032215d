@@ -236,7 +236,7 @@
       outline:none;
       touch-action: manipulation;
     }
-    .stakeSlider{ width:100%; accent-color:#38bdf8; }
+    .stakeSlider{ width:100%; accent-color:#38bdf8; touch-action:auto; }
     .profileTop{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
     .balanceChip{ padding:4px 10px; border-radius:999px; background:rgba(255,255,255,.12); font-size:12px; font-weight:900; white-space:nowrap; width:fit-content; margin-left:auto; }
     .filtersGrid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
@@ -1394,6 +1394,7 @@
         }
         linkedWalletAddress = String(msg.walletAddress || linkedWalletAddress || "");
         renderBalance();
+        refreshWalletBalanceUi().finally(syncTonTopupUi);
         syncTonTopupUi();
         return;
       }
@@ -1540,9 +1541,9 @@
       });
       if (!j.url) throw new Error("stars_link_failed");
       if (tg && typeof tg.openInvoice === "function") tg.openInvoice(j.url);
-      else alert("Оплата доступна только в Telegram");
+      else alert("Оплата доступна только внутри Telegram Mini App");
     } catch (e) {
-      alert("Ошибка Stars: " + (e?.message || "unknown"));
+      alert("Пополнение ⭐ не удалось: " + (e?.message || "неизвестная ошибка"));
     }
   };
 
@@ -1577,8 +1578,12 @@
       const ok = await pollTonConfirm(ord.orderId, userId);
       tonOrderInfo.textContent = ok ? `Вы пополнили ${ton} TON успешно` : "Не удалось подтвердить TON за время ожидания";
       if (ok) pendingTonOrder = null;
+      if (ok) {
+        await refreshWalletBalanceUi();
+        syncTonTopupUi();
+      }
     } catch (e) {
-      alert("Ошибка TON: " + (e?.message || "unknown"));
+      alert("Пополнение TON не удалось: " + (e?.message || "неизвестная ошибка"));
     }
   };
 
